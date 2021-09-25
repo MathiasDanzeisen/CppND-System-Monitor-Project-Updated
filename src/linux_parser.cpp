@@ -2,7 +2,10 @@
 
 #include <dirent.h>
 #include <unistd.h>
+// for debugging
+#include <iostream>
 
+//
 #include <string>
 #include <vector>
 
@@ -67,11 +70,47 @@ vector<int> LinuxParser::Pids() {
   return pids;
 }
 
-// TODO: Read and return the system memory utilization
-float LinuxParser::MemoryUtilization() { return 0.0; }
+// Read and return the system memory utilization
+//  See:
+//  https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=34e431b0ae398fc54ea69ff85ec700722c9da773
+float LinuxParser::MemoryUtilization() {
+  string line;
+  string key;
+  int value;
+  int MemTotal{0}, MemAvailable{0};
+  std::ifstream filestream(kProcDirectory + kMeminfoFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+      std::replace(line.begin(), line.end(), ':', ' ');
+      // std::replace(line.begin(), line.end(), ' kB ', ' ');
+      std::istringstream linestream(line);
+      while (linestream >> key >> value) {
+        if (key == "MemTotal") {
+          MemTotal = value;
+        }
+        if (key == "MemAvailable") {
+          MemAvailable = value;
+          break;
+        }
+      }
+    }
+  }
+  return (float(MemAvailable) / float(MemTotal));
+}
 
-// TODO: Read and return the system uptime
-long LinuxParser::UpTime() { return 0; }
+// Read and return the system uptime
+long LinuxParser::UpTime() {
+  string line;
+  float uptimesec;
+  float idlesec;
+  std::ifstream stream(kProcDirectory + kUptimeFilename);
+  if (stream.is_open()) {
+    std::getline(stream, line);
+    std::istringstream linestream(line);
+    linestream >> idlesec >> uptimesec;
+  }
+  return static_cast<long>(uptimesec);
+}
 
 // TODO: Read and return the number of jiffies for the system
 long LinuxParser::Jiffies() { return 0; }

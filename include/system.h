@@ -15,8 +15,8 @@ class System {
   long UpTime();                      // TODO: See src/system.cpp
   int TotalProcesses();               // TODO: See src/system.cpp
   int RunningProcesses();             // TODO: See src/system.cpp
-  std::string Kernel();               // TODO: See src/system.cpp
-  std::string OperatingSystem();      // TODO: See src/system.cpp
+  std::string Kernel();               // Done: See src/system.cpp
+  std::string OperatingSystem();      // Done: See src/system.cpp
 
   // TODO: Define any necessary private members
  private:
