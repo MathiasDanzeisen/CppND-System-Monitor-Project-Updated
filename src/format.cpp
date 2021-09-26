@@ -1,11 +1,28 @@
-#include "format.h"
 
+// for debugging
+#include <iostream>
+
+//
+#include <chrono>
+#include <iomanip>
 #include <string>
+
+#include "format.h"
 
 using std::string;
 
-// TODO: Complete this helper function
+// Complete this helper function
 // INPUT: Long int measuring seconds
 // OUTPUT: HH:MM:SS
-// REMOVE: [[maybe_unused]] once you define the function
-string Format::ElapsedTime(long seconds [[maybe_unused]]) { return string(); }
+string Format::ElapsedTime(long seconds) {
+  std::chrono::seconds sec{seconds};
+  std::stringstream outstr;
+
+  outstr << std::setfill('0') << std::setw(2)
+         << std::chrono::duration_cast<std::chrono::hours>(sec).count() << ":"
+         << std::setfill('0') << std::setw(2)
+         << std::chrono::duration_cast<std::chrono::minutes>(sec).count() % 60
+         << ":" << std::setfill('0') << std::setw(2) << sec.count() % 60
+         << std::endl;
+  return outstr.str();
+}
