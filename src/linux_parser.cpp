@@ -118,49 +118,109 @@ long LinuxParser::Jiffies() { return 0; }
 // REMOVE: [[maybe_unused]] once you define the function
 long LinuxParser::ActiveJiffies(int pid [[maybe_unused]]) { return 0; }
 
-// TODO: Read and return the number of active jiffies for the system
-long LinuxParser::ActiveJiffies() { return 0; }
+// Parse and return the number of active jiffies for the system
+long LinuxParser::ActiveJiffies() {
+  std::string key;
+  // desciption at
+  //  https://github.com/torvalds/linux/blob/master/Documentation/filesystems/proc.rst#18-miscellaneous-kernel-statistics-in-procstat
+  long user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice;
 
-// TODO: Read and return the number of idle jiffies for the system
-long LinuxParser::IdleJiffies() { return 0; }
+  string line;
+  std::ifstream filestream(kProcDirectory + kStatFilename);
+  if (filestream.is_open()) {
+    std::getline(filestream, line);
+    std::istringstream linestream(line);
+    linestream >> key >> user >> nice >> system >> idle >> iowait >> irq >>
+        softirq >> steal >> guest >> guest_nice;
+  }
 
-// TODO: Read and return CPU utilization
-vector<string> LinuxParser::CpuUtilization() { return {}; }
+  // NonIdle = user + nice + system + irq + softirq + steal
+  // https://stackoverflow.com/questions/23367857/accurate-calculation-of-cpu-usage-given-in-percentage-in-linux
+
+  return user + nice + system + irq + softirq + steal;
+}
+
+// Read and return the number of idle jiffies for the system
+long LinuxParser::IdleJiffies() {
+  std::string key;
+  // desciption at
+  //  https://github.com/torvalds/linux/blob/master/Documentation/filesystems/proc.rst#18-miscellaneous-kernel-statistics-in-procstat
+  long user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice;
+
+  string line;
+  std::ifstream filestream(kProcDirectory + kStatFilename);
+  if (filestream.is_open()) {
+    std::getline(filestream, line);
+    std::istringstream linestream(line);
+    linestream >> key >> user >> nice >> system >> idle >> iowait >> irq >>
+        softirq >> steal >> guest >> guest_nice;
+  }
+
+  // Idle = idle + iowait
+  // https://stackoverflow.com/questions/23367857/accurate-calculation-of-cpu-usage-given-in-percentage-in-linux
+
+  return idle + iowait;
+}
+
+// Read and return CPU utilization
+//  in case of error: return vector with one empty string
+vector<string> LinuxParser::CpuUtilization() {
+  vector<string> CpuUtilization;
+  string key;
+  string line;
+
+  std::ifstream filestream(kProcDirectory + kStatFilename);
+  while (std::getline(filestream, line)) {
+    std::istringstream linestream(line);
+    linestream >> key;
+    if (key != "intr") {
+      CpuUtilization.push_back(line);
+    } else {
+      CpuUtilization.push_back("");
+      break;
+    }
+  }
+  return CpuUtilization;
+}
 
 // Read and return the total number of processes
 int LinuxParser::TotalProcesses() {
   string line;
   string key;
-  int value;
+  int value, processes;
   std::ifstream filestream(kProcDirectory + kStatFilename);
   if (filestream.is_open()) {
     while (std::getline(filestream, line)) {
       std::istringstream linestream(line);
       while (linestream >> key >> value) {
         if (key == "processes") {
-          return value;
+          processes = value;
+          break;
         }
       }
     }
   }
+  return processes;
 }
 
 // Read and return the number of running processes
 int LinuxParser::RunningProcesses() {
   string line;
   string key;
-  int value;
+  int value, procs_running;
   std::ifstream filestream(kProcDirectory + kStatFilename);
   if (filestream.is_open()) {
     while (std::getline(filestream, line)) {
       std::istringstream linestream(line);
       while (linestream >> key >> value) {
         if (key == "procs_running") {
-          return value;
+          procs_running = value;
+          break;
         }
       }
     }
   }
+  return procs_running;
 }
 
 // TODO: Read and return the command associated with a process
