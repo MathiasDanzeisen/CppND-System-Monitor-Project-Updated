@@ -6,7 +6,7 @@
 #include "linux_parser.h"
 
 // debugging
-#include <iostream>>
+#include <iostream>
 
 // Constrcutor
 //  * since init of private member is not done coherent, first update of system
@@ -17,10 +17,10 @@ Processor::Processor()
       prevNonIdle{LinuxParser::ActiveJiffies() - 1} {}
 
 // Return the aggregate CPU utilization
-//  return: as relative value, intervall betwenn this call and last call of the method
+//  return: as relative value, intervall betwenn this call and last call of the
+//  method
 float Processor::Utilization() {
   std::string key;
-  float utilization;
   long user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice;
   long sumIdle, sumNonIdle, deltaIdle, deltaNonIdle;
   // Get consistent snapshot of system data
