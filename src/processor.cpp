@@ -5,16 +5,13 @@
 
 #include "linux_parser.h"
 
-// debugging
-#include <iostream>
-
 // Constrcutor
 //  * since init of private member is not done coherent, first update of system
 //  monitor might be inaccurate
 // * Sutract one to avoid division by zero
 Processor::Processor()
-    : prevIdle{LinuxParser::IdleJiffies() - 1},
-      prevNonIdle{LinuxParser::ActiveJiffies() - 1} {}
+    : prevIdle_{LinuxParser::IdleJiffies() - 1},
+      prevNonIdle_{LinuxParser::ActiveJiffies() - 1} {}
 
 // Return the aggregate CPU utilization
 //  return: as relative value, intervall betwenn this call and last call of the
@@ -34,11 +31,11 @@ float Processor::Utilization() {
   sumNonIdle = user + nice + system + irq + softirq + steal;
 
   // calc delta since last call of the method
-  deltaNonIdle = sumNonIdle - this->prevNonIdle;
-  deltaIdle = sumIdle - this->prevIdle;
+  deltaNonIdle = sumNonIdle - this->prevNonIdle_;
+  deltaIdle = sumIdle - this->prevIdle_;
 
-  this->prevIdle = sumIdle;
-  this->prevNonIdle = sumNonIdle;
+  this->prevIdle_ = sumIdle;
+  this->prevNonIdle_ = sumNonIdle;
 
   return static_cast<float>(deltaNonIdle) /
          (static_cast<float>(deltaIdle) + static_cast<float>(deltaNonIdle));
