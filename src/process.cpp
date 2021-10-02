@@ -3,10 +3,12 @@
 #include <unistd.h>
 
 #include <cctype>
+#include <chrono>
 #include <sstream>
 #include <string>
 #include <vector>
 
+#include "format.h"
 #include "linux_parser.h"
 
 using std::string;
@@ -19,7 +21,12 @@ Process::Process(int pid) { pid_ = pid; }
 int Process::Pid() const { return this->pid_; }
 
 // Return this process's CPU utilization
-float Process::CpuUtilization() { return 0; }
+float Process::CpuUtilization() const {
+  long activetime_s =
+      LinuxParser::ActiveJiffies(this->Pid()) / sysconf(_SC_CLK_TCK);
+
+  return static_cast<float>(activetime_s) / static_cast<float>(this->UpTime());
+}
 
 // Return the command that generated this process
 string Process::Command() {
@@ -29,8 +36,10 @@ string Process::Command() {
   return this->cmd_;
 }
 
-// TODO: Return this process's memory utilization
-string Process::Ram() { return string(); }
+// Return this process's memory utilization
+string Process::Ram() {
+  return to_string(LinuxParser::Ram(this->Pid()) / 1000);
+}
 
 // Return the user (name) that generated this process
 string Process::User() {
@@ -41,10 +50,10 @@ string Process::User() {
   return user_;
 }
 
-// TODO: Return the age of this process (in seconds)
-long int Process::UpTime() { return 0; }
+// Return the age of this process (in seconds)
+long int Process::UpTime() const { return LinuxParser::UpTime(this->Pid()); }
 
 // Overload the "less than" comparison operator for Process objects
 bool Process::operator<(Process const& a) const {
-  //return this->Pid() < (a.Pid());
+  return (a.CpuUtilization()) < this->CpuUtilization();
 }

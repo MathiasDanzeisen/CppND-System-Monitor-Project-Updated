@@ -2,10 +2,7 @@
 
 #include <dirent.h>
 #include <unistd.h>
-// for debugging
-#include <iostream>
 
-//
 #include <string>
 #include <vector>
 
@@ -98,15 +95,15 @@ float LinuxParser::MemoryUtilization() {
 }
 
 // Read and return the system uptime
+// return uptime of the system in seconds
 long LinuxParser::UpTime() {
   string line;
   float uptimesec;
-  float idlesec;
   std::ifstream stream(kProcDirectory + kUptimeFilename);
   if (stream.is_open()) {
     std::getline(stream, line);
     std::istringstream linestream(line);
-    linestream >> idlesec >> uptimesec;
+    linestream >> uptimesec;
   }
   return static_cast<long>(uptimesec);
 }
@@ -114,9 +111,28 @@ long LinuxParser::UpTime() {
 // TODO: Read and return the number of jiffies for the system
 long LinuxParser::Jiffies() { return 0; }
 
-// TODO: Read and return the number of active jiffies for a PID
-// REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::ActiveJiffies(int pid [[maybe_unused]]) { return 0; }
+// Read and return the number of active jiffies for a PID
+long LinuxParser::ActiveJiffies(int pid) {
+  int pid_;
+  std::string comm;
+  char state;
+  int ppid, pgrp, session, tty_nr, tpgid, flags;
+  long minflt, cminflt, majflt, cmajflt;
+  long utime, stime, cutime, cstime;
+
+  string cmd;
+  string line;
+  std::ifstream stream(kProcDirectory + "/" + to_string(pid) + kStatFilename);
+  if (stream.is_open()) {
+    std::getline(stream, line);
+    std::istringstream linestream(line);
+    linestream >> pid_ >> comm >> state >> ppid >> pgrp >> session >> tty_nr >>
+        tpgid >> flags >> minflt >> cminflt >> majflt >> cmajflt >> utime >>
+        stime >> cutime >> cstime;
+  }
+
+  return utime + stime;
+}
 
 // Parse and return the number of active jiffies for the system
 long LinuxParser::ActiveJiffies() {
@@ -235,13 +251,31 @@ string LinuxParser::Command(int pid) {
     linestream >> cmd;
   }
   return cmd;
-
-  return string();
 }
 
-// TODO: Read and return the memory used by a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Ram(int pid [[maybe_unused]]) { return string(); }
+// Read and return the memory used by a process
+//  return: the memory in kB
+int LinuxParser::Ram(int pid) {
+  string line;
+  string key;
+  int value, memory;
+  std::ifstream filestream(kProcDirectory + "/" + to_string(pid) +
+                           kStatusFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+      std::replace(line.begin(), line.end(), ':', ' ');
+      std::istringstream linestream(line);
+      while (linestream >> key >> value) {
+        if (key == "VmSize") {
+          memory = value;
+          break;
+        }
+      }
+    }
+  }
+
+  return memory;
+}
 
 // Read and return the user ID associated with a process
 int LinuxParser::Uid(int pid) {
@@ -288,6 +322,34 @@ string LinuxParser::User(int pid) {
   return ret_user;
 }
 
-// TODO: Read and return the uptime of a process
-// REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::UpTime(int pid [[maybe_unused]]) { return 0; }
+// Read and return the start of a process
+// return: start time in seconds after the system boot
+long LinuxParser::StartTime(int pid) {
+  // see: https://man7.org/linux/man-pages/man5/proc.5.html
+  int pid_;
+  std::string comm;
+  char state;
+  int ppid, pgrp, session, tty_nr, tpgid, flags;
+  long minflt, cminflt, majflt, cmajflt;
+  long utime, stime, cutime, cstime, priority, nice, num_threads, itrealvalue,
+      starttime;
+
+  string cmd;
+  string line;
+  std::ifstream stream(kProcDirectory + "/" + to_string(pid) + kStatFilename);
+  if (stream.is_open()) {
+    std::getline(stream, line);
+    std::istringstream linestream(line);
+    linestream >> pid_ >> comm >> state >> ppid >> pgrp >> session >> tty_nr >>
+        tpgid >> flags >> minflt >> cminflt >> majflt >> cmajflt >> utime >>
+        stime >> cutime >> cstime >> priority >> nice >> num_threads >>
+        itrealvalue >> starttime;
+  }
+
+  return starttime / sysconf(_SC_CLK_TCK);
+}
+// Read and return the uptime of a process
+// return: start time in seconds after the system boot
+long LinuxParser::UpTime(int pid) {
+  return LinuxParser::UpTime() - LinuxParser::StartTime(pid);
+}
